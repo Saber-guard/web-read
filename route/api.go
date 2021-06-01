@@ -18,7 +18,8 @@ func LoadRoute(route *gin.Engine) *gin.Engine {
 	// 微信
 	apiGroup := route.Group("/wechat")
 	{
-		apiGroup.GET("/init", controller.WechatController{}.Init)
+		apiGroup.GET("/callback", controller.WechatController{}.Init)
+		apiGroup.POST("/callback", controller.WechatController{}.Callback)
 	}
 	return route
 }
