@@ -3,7 +3,7 @@ package controller
 import (
 	"encoding/xml"
 	"github.com/gin-gonic/gin"
-	"web-read/request/wechat"
+	"web-read/request/wechatRequest"
 	"web-read/service"
 )
 
@@ -12,7 +12,7 @@ type WechatController struct {
 }
 
 func (w WechatController) Init(context *gin.Context) {
-	var inputs wechat.InitRequest
+	var inputs wechatRequest.InitRequest
 	if err := context.ShouldBind(&inputs); err != nil {
 		w.ApiError(context, -1, "参数错误")
 	} else {
@@ -21,7 +21,7 @@ func (w WechatController) Init(context *gin.Context) {
 }
 
 func (w WechatController) Callback(context *gin.Context) {
-	var inputs wechat.BaseXmlRequest
+	var inputs wechatRequest.BaseXmlRequest
 	body, err := context.GetRawData()
 	if err == nil {
 		// 先解析成基础xml的struct
@@ -29,7 +29,7 @@ func (w WechatController) Callback(context *gin.Context) {
 			// 再根据MsgType解析成不同的struct
 			switch inputs.MsgType {
 			case "text":
-				var textInputs wechat.TextXmlRequest
+				var textInputs wechatRequest.TextXmlRequest
 				if err := xml.Unmarshal(body, &textInputs); err == nil {
 					res, err := service.WechatService{}.ReceiveText(textInputs)
 					if err == nil {

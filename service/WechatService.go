@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
-	wechat2 "web-read/request/wechat"
-	"web-read/response/wechat"
+	"web-read/request/wechatRequest"
+	"web-read/response/wechatResponse"
 )
 
 type WechatService struct {
@@ -16,7 +17,7 @@ type WechatService struct {
 func (w WechatService) AccessToken() {
 	url := "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=" + os.Getenv("WECHAT_APPID") + "&secret=" + os.Getenv("WECHAT_SECRET")
 	for {
-		var response wechat.AccessTokenResponse
+		var response wechatResponse.AccessTokenResponse
 		res, err := CurlService{}.GetJson(url)
 		if err != nil {
 			fmt.Println("AccessToken请求失败")
@@ -34,11 +35,25 @@ func (w WechatService) AccessToken() {
 }
 
 // 接收text消息
-func (w WechatService) ReceiveText(inputs wechat2.TextXmlRequest) (response wechat.TextXmlResponse, err error) {
+func (w WechatService) ReceiveText(inputs wechatRequest.TextXmlRequest) (response wechatResponse.TextXmlResponse, err error) {
+
 	response.FromUserName = inputs.ToUserName
 	response.ToUserName = inputs.FromUserName
-	response.MsgType = "text"
 	response.CreateTime = time.Now().Unix()
-	response.Content = inputs.Content
+
+	// 如果是http或https开头，调用在线语音合成
+	re, err := regexp.Compile("^http(s)?://")
+	if err == nil && re.MatchString(inputs.Content) {
+		voiceUrlPrefix := "http://api.codingwork.cn/voices/"
+		fileName, err := VoiceService{}.urlToVoice(inputs.Content)
+		if err == nil {
+			response.MsgType = "text"
+			response.Content = voiceUrlPrefix + fileName
+		}
+	} else {
+		response.MsgType = "text"
+		response.Content = inputs.Content
+	}
+
 	return
 }
