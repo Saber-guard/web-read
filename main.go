@@ -17,6 +17,10 @@ func main() {
 	// 加载路由
 	route.LoadRoute(router)
 
+	//// 异步网页转语音：没有客服权限消息所以放弃
+	//voiceChannel.UrlToVoiceChan = make(chan voiceChannel.UrlToVoiceChannel, 100)
+	//go service.VoiceService{}.UrlToVoiceListener()
+
 	// 循环获取微信access_token
 	go service.WechatService{}.AccessToken()
 

@@ -2,12 +2,35 @@ package service
 
 import (
 	"encoding/json"
+	"os"
 	"regexp"
+	"web-read/channel/voiceChannel"
 	"web-read/request/voiceRequest"
+	"web-read/request/wechatRequest"
 	"web-read/response/voiceResponse"
 )
 
 type VoiceService struct {
+}
+
+func (v VoiceService) UrlToVoiceListener() {
+	for c := range voiceChannel.UrlToVoiceChan {
+		// 生成声音
+		voiceUrlPrefix := "http://api.codingwork.cn/voices/"
+		fileName, err := VoiceService{}.urlToVoice(c.Url)
+		if err == nil {
+			// 通过客服消息发送给用户
+			url := "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token=" + os.Getenv("WECHAT_ACCESS_TOKEN")
+			var textJson = wechatRequest.TextJsonRequest{
+				ToUser:  c.ToUserName,
+				MsgType: "text",
+				Text:    wechatRequest.TextJson{Content: "声音链接：" + voiceUrlPrefix + fileName},
+			}
+			textJsonBytes, _ := json.Marshal(textJson)
+			_, _ = CurlService{}.PostJson(url, textJsonBytes)
+		}
+	}
+
 }
 
 func (v VoiceService) urlToVoice(url string) (fileName string, err error) {

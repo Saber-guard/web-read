@@ -44,12 +44,24 @@ func (w WechatService) ReceiveText(inputs wechatRequest.TextXmlRequest) (respons
 	// 如果是http或https开头，调用在线语音合成
 	re, err := regexp.Compile("^http(s)?://")
 	if err == nil && re.MatchString(inputs.Content) {
+		// 策略1：直接返回，缺点是大的文章太慢
 		voiceUrlPrefix := "http://api.codingwork.cn/voices/"
 		fileName, err := VoiceService{}.urlToVoice(inputs.Content)
 		if err == nil {
 			response.MsgType = "text"
-			response.Content = voiceUrlPrefix + fileName
+			response.Content = "声音链接：" + voiceUrlPrefix + fileName
 		}
+
+		//// 策略2：异步返回，没有客服消息所以放弃
+		//// 临时返回消息
+		//response.MsgType = "text"
+		//response.Content = "声音合成中，请稍后"
+		//// 丢到chan中异步生成voice
+		//voiceChannel.UrlToVoiceChan <- voiceChannel.UrlToVoiceChannel{
+		//	Url: inputs.Content,
+		//	FromUserName: inputs.ToUserName,
+		//	ToUserName: inputs.FromUserName,
+		//}
 	} else {
 		response.MsgType = "text"
 		response.Content = inputs.Content
