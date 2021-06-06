@@ -29,7 +29,7 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		m := md5.New()
 		_, _ = io.WriteString(m, text)
 		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
-		filePath := "./tmp/voices/" + fileName
+		filePath := "/mnt/project/web-read/tmp/voices/" + fileName
 
 		// 判断文件是否存在，存在则直接返回文件名
 		_, fileExistErr := os.Stat(filePath)
