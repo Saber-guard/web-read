@@ -8,5 +8,8 @@ require (
 	github.com/hajimehoshi/oto v0.7.1
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
+	github.com/tencentcloud/tencentcloud-sdk-go v1.0.177
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.173
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts v0.0.0-20210604124829-2582e80b3de5
 	github.com/tosone/minimp3 v1.0.1
 )

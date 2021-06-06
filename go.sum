@@ -34,6 +34,12 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/tencentcloud/tencentcloud-sdk-go v1.0.177 h1:41jauU+a+Q5Ygt6+dSsRJXf99Ws1HyO/11fa4tokPY4=
+github.com/tencentcloud/tencentcloud-sdk-go v1.0.177/go.mod h1:asUz5BPXxgoPGaRgZaVm1iGcUAuHyYUo1nXqKa83cvI=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.173 h1:9gHidPf7syp/XIRUrlDuPocAKremlKcs3hXtrpUfzWQ=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.173/go.mod h1:7sCQWVkxcsR38nffDW057DRGk8mUjK1Ing/EFOK8s8Y=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts v0.0.0-20210604124829-2582e80b3de5 h1:LkI6EVxk6t7h8gZHHaP62tmRXLqqM1yVbkE8WxY6Vjs=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts v0.0.0-20210604124829-2582e80b3de5/go.mod h1:e4+r0HiAx1mHxQIAtjTYbGm7N+RvfsyHiMURu9S8UNg=
 github.com/tosone/minimp3 v1.0.1 h1:5ajMIgZKlQqJdX3KJj/wb0o1oNef9S3fuLr9T5YwQqw=
 github.com/tosone/minimp3 v1.0.1/go.mod h1:WFso0UvZL1fPit45V6RQPKxbehLI4XZaJyLs2/TJHoU=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
