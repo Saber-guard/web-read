@@ -11,10 +11,17 @@ func (s StringUtil) SplitByLen(str string, unitLen int) (arr []string) {
 	// 循环截取
 	offset := 0
 	for offset < strruneLen {
+		//  避免超出
+		end := offset + unitLen
+		if end > strruneLen {
+			end = strruneLen
+		}
+
+		// 截取
 		if offset == 0 {
-			arr[0] = string(strRune[offset : offset+unitLen])
+			arr[0] = string(strRune[offset:end])
 		} else {
-			arr = append(arr, string(strRune[offset:offset+unitLen]))
+			arr = append(arr, string(strRune[offset:end]))
 		}
 		offset += unitLen
 	}

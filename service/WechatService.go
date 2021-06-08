@@ -46,7 +46,6 @@ func (w WechatService) ReceiveText(inputs wechatRequest.TextXmlRequest) (respons
 	if err == nil && re.MatchString(inputs.Content) {
 		voiceUrlPrefix := "http://voice.codingwork.cn:8080/"
 		fileName, err := VoiceService{}.urlToVoice(inputs.Content)
-		fmt.Println(err)
 		if err == nil {
 			response.MsgType = "text"
 			response.Content = "声音链接：" + voiceUrlPrefix + fileName

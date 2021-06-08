@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
 	"web-read/util"
@@ -30,12 +29,11 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		_, _ = io.WriteString(m, text)
 		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
 		filePath := "/mnt/project/web-read/tmp/voices/" + fileName
-
 		// 判断文件是否存在，存在则直接返回文件名
 		_, fileExistErr := os.Stat(filePath)
 		if fileExistErr != nil {
 			textArr := util.StringUtil{}.SplitByLen(text, 105)
-			voiceArr := make([]string, len(textArr))
+			voiceArr := make([][]byte, len(textArr))
 			var wg sync.WaitGroup
 			for index, item := range textArr {
 				wg.Add(1)
@@ -43,11 +41,16 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 				time.Sleep(time.Millisecond * 85)
 			}
 			wg.Wait()
+			// 合并二维数组
+			voiceContent := []byte("")
+			for _, item := range voiceArr {
+				voiceContent = append(voiceContent, item...)
+			}
+
 			// 写入文件
 			f, err := os.Create(filePath)
 			if err == nil {
-				bytes, _ := base64.StdEncoding.DecodeString(strings.Join(voiceArr, ""))
-				_, _ = f.Write(bytes)
+				_, _ = f.Write(voiceContent)
 				_ = f.Close()
 			}
 		}
@@ -79,7 +82,7 @@ func (v VoiceService) HtmlToText(html string) (text string) {
 	return
 }
 
-func (v VoiceService) TextToVoice(index int, text string, fileName string, voiceArr []string, wg *sync.WaitGroup) {
+func (v VoiceService) TextToVoice(index int, text string, fileName string, voiceArr [][]byte, wg *sync.WaitGroup) {
 	// 调用腾讯云接口转语音
 	credential := common.NewCredential(
 		os.Getenv("SECRET_ID"),
@@ -97,7 +100,33 @@ func (v VoiceService) TextToVoice(index int, text string, fileName string, voice
 	request.Speed = common.Float64Ptr(1) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)
 	if err == nil {
-		voiceArr[index] = *res.Response.Audio
+		item, _ := base64.StdEncoding.DecodeString(*res.Response.Audio)
+		voiceArr[index] = item
 	}
 	wg.Done()
 }
+
+//func (v VoiceService) MergeVoice(filePath1 []byte, filePath2 []byte) {
+//	// file1
+//	for index, item := range filePath1 {
+//		if item == 255 {
+//			filePath1 = filePath1[index:]
+//			break
+//		}
+//	}
+//	tmp1 := filePath1[len(filePath1)-128:len(filePath1)-125]
+//	if strings.ToLower(string(tmp1)) == "tag" {
+//		filePath1 = filePath1[0:len(filePath1)-129]
+//	}
+//	// file2
+//	for index, item := range filePath2 {
+//		if item == 255 {
+//			filePath2 = filePath2[index:]
+//			break
+//		}
+//	}
+//	tmp2 := filePath2[len(filePath2)-128:len(filePath2)-125]
+//	if strings.ToLower(string(tmp2)) == "tag" {
+//		filePath2 = filePath2[0:len(filePath2)-129]
+//	}
+//}
