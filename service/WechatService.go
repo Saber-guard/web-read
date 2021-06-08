@@ -44,7 +44,7 @@ func (w WechatService) ReceiveText(inputs wechatRequest.TextXmlRequest) (respons
 	// 如果是http或https开头，调用在线语音合成
 	re, err := regexp.Compile("^http(s)?://")
 	if err == nil && re.MatchString(inputs.Content) {
-		voiceUrlPrefix := "http://voice.codingwork.cn:8080/"
+		voiceUrlPrefix := "http://voice.codingwork.cn/"
 		fileName, err := VoiceService{}.urlToVoice(inputs.Content)
 		if err == nil {
 			response.MsgType = "text"
