@@ -28,7 +28,8 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		m := md5.New()
 		_, _ = io.WriteString(m, text)
 		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
-		filePath := "/mnt/project/web-read/tmp/voices/" + fileName
+		filePath := "/mnt/voices/" + fileName
+		//filePath := "./tmp/voices/" + fileName
 		// 判断文件是否存在，存在则直接返回文件名
 		_, fileExistErr := os.Stat(filePath)
 		if fileExistErr != nil {
@@ -97,7 +98,7 @@ func (v VoiceService) TextToVoice(index int, text string, fileName string, voice
 	request.ModelType = common.Int64Ptr(1)
 	request.VoiceType = common.Int64Ptr(4) // 选择声音
 	request.Codec = common.StringPtr("mp3")
-	request.Speed = common.Float64Ptr(1) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
+	request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)
 	if err == nil {
 		item, _ := base64.StdEncoding.DecodeString(*res.Response.Audio)
@@ -105,28 +106,3 @@ func (v VoiceService) TextToVoice(index int, text string, fileName string, voice
 	}
 	wg.Done()
 }
-
-//func (v VoiceService) MergeVoice(filePath1 []byte, filePath2 []byte) {
-//	// file1
-//	for index, item := range filePath1 {
-//		if item == 255 {
-//			filePath1 = filePath1[index:]
-//			break
-//		}
-//	}
-//	tmp1 := filePath1[len(filePath1)-128:len(filePath1)-125]
-//	if strings.ToLower(string(tmp1)) == "tag" {
-//		filePath1 = filePath1[0:len(filePath1)-129]
-//	}
-//	// file2
-//	for index, item := range filePath2 {
-//		if item == 255 {
-//			filePath2 = filePath2[index:]
-//			break
-//		}
-//	}
-//	tmp2 := filePath2[len(filePath2)-128:len(filePath2)-125]
-//	if strings.ToLower(string(tmp2)) == "tag" {
-//		filePath2 = filePath2[0:len(filePath2)-129]
-//	}
-//}
