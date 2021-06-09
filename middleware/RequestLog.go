@@ -8,11 +8,16 @@ import (
 	"web-read/enum"
 )
 
-func LogToFile() gin.HandlerFunc {
-	logFilePath := "log/"
-	logFileName := time.Now().Format(enum.DataZone) + ".log"
+func RequestLog() gin.HandlerFunc {
+	logFilePath := os.Getenv("ROOT_DIR") + "/log/"
+	logFileName := "request-" + time.Now().Format(enum.DataZone) + ".log"
 	logFile := logFilePath + logFileName
 	// 写入文件
+	_, fileExistErr := os.Stat(logFile)
+	if fileExistErr != nil {
+		f, _ := os.Create(logFile)
+		_ = f.Close()
+	}
 	src, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	//实例化
 	logger := logrus.New()
