@@ -31,8 +31,6 @@ func main() {
 	// 加载路由
 	route.LoadRoute(router)
 
-	service.LogService.Log("info", "message", map[string]interface{}{"a": 1})
-
 	// 循环获取微信access_token
 	go service.WechatService{}.AccessToken()
 
