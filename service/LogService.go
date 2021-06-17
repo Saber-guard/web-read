@@ -9,7 +9,7 @@ import (
 )
 
 type logService struct {
-	Log func(string, string, map[string]interface{})
+	Log func(level string, message string, data map[string]interface{})
 }
 
 type logLine struct {
@@ -20,7 +20,7 @@ type logLine struct {
 }
 
 // 注册日志
-func (l logService) LogRegist() func(string, string, map[string]interface{}) {
+func (l logService) LogRegist() func(level string, message string, data map[string]interface{}) {
 	logFile := os.Getenv("ROOT_DIR") + "/log/log-" + time.Now().Format(enum.DataZone) + ".log"
 	// 文件不存在则创建
 	_, fileExistErr := os.Stat(logFile)

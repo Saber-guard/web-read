@@ -28,6 +28,8 @@ func main() {
 	// 中间件
 	router.Use(middleware.RequestLog())                     // 记录请求日志
 	service.LogService.Log = service.LogService.LogRegist() // 记录逻辑日志
+	// 连接数据库
+	service.DbService.InitDb()
 	// 加载路由
 	route.LoadRoute(router)
 

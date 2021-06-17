@@ -16,10 +16,17 @@ func LoadRoute(route *gin.Engine) *gin.Engine {
 	}
 
 	// 微信
-	apiGroup := route.Group("/wechat")
+	wechatGroup := route.Group("/wechat")
 	{
-		apiGroup.GET("/callback", controller.WechatController{}.Init)
-		apiGroup.POST("/callback", controller.WechatController{}.Callback)
+		wechatGroup.GET("/callback", controller.WechatController{}.Init)
+		wechatGroup.POST("/callback", controller.WechatController{}.Callback)
+	}
+
+	// 爬虫
+	crawlGroup := route.Group("/crawl")
+	{
+		crawlGroup.GET("/crawlCompany", controller.CrawlInvestmentController{}.CrawlCompany)
 	}
 	return route
+
 }

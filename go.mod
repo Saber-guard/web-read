@@ -16,4 +16,6 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts v0.0.0-20210604124829-2582e80b3de5
 	github.com/tosone/minimp3 v1.0.1
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	gorm.io/driver/mysql v1.1.0
+	gorm.io/gorm v1.21.10
 )
