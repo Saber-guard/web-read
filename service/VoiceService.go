@@ -52,7 +52,7 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 			}
 			wg.Wait()
 			// 合并二维数组
-			voiceContent := []byte("")
+			var voiceContent []byte
 			for _, item := range voiceArr {
 				voiceContent = append(voiceContent, item...)
 			}
