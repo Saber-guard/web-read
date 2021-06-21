@@ -1,4 +1,6 @@
 /.env
 /main
 /log/*
+/vendor/
 .idea/inspectionProfiles/
+/tmp/

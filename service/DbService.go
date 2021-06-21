@@ -24,7 +24,7 @@ func (d dbService) InitDb() {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Println(err)
-		LogService.Log("ERROR", "数据库连接失败", map[string]interface{}{"error": err})
+		LogService.Log("ERROR", "数据库连接失败", LogData{"error": err})
 		os.Exit(0)
 	}
 	DbService.Db = db

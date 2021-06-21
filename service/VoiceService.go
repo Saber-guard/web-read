@@ -41,14 +41,15 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		m := md5.New()
 		_, _ = io.WriteString(m, text)
 		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
-		filePath := "/mnt/voices/" + fileName
-		// filePath := "./tmp/voices/" + fileName
+		filePath := os.Getenv("VOICE_PATH") + fileName
+
+		// todo::为了避免并发请求导致重复调用腾讯云，需要一个分布式锁
 
 		// 判断文件是否存在，存在则直接返回文件名
 		fileInfo, fileExistErr := os.Stat(filePath)
 		// err==nil文件存在，单err!=nil不一定是报文件不存在的错误，需要os.IsNotExist()判断
 		if fileExistErr == nil {
-			fmt.Printf("os.Stat success,file already exists,fileName=%v\n", fileName)
+			LogService.Log("INFO", "os.Stat success,file already exists", LogData{"filePath": filePath})
 			return fileInfo.Name(), fileExistErr
 		}
 
@@ -71,7 +72,7 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		}
 	}
 
-	fmt.Printf("~~~urlToVoice end~~~,url=%v,fileName=%v\n", url, fileName)
+	LogService.Log("INFO", "~~~urlToVoice end~~~", LogData{"url": url, "fileName": fileName})
 	return
 }
 
@@ -83,7 +84,9 @@ func (v VoiceService) writeToFile(
 	// 写入文件
 	file, err := os.Create(filePath)
 	if err != nil {
-		fmt.Printf("os.Create error,err=%v\n", err)
+		LogService.Log("ERROR", "os.Create error", LogData{
+			"error": err, "filePath": filePath,
+		})
 		return err
 	}
 	defer func() {
@@ -99,7 +102,9 @@ func (v VoiceService) writeToFile(
 	}
 	err = wav.Encode(file, streamer, format)
 	if err != nil {
-		fmt.Println("wav.Encode error, err=", err)
+		LogService.Log("ERROR", "wav.Encode error", LogData{
+			"error": err, "filePath": filePath,
+		})
 		return err
 	}
 	return nil
@@ -164,7 +169,9 @@ func (v VoiceService) TextToVoice(
 	// request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)
 	if err != nil {
-		fmt.Printf("client.TextToVoice error,err=%v\n", err)
+		LogService.Log("ERROR", "client.TextToVoice error", LogData{
+			"error": err, "text": text, "index": index, "fileName": fileName,
+		})
 		return
 	}
 
@@ -172,7 +179,9 @@ func (v VoiceService) TextToVoice(
 		b, _ := base64.StdEncoding.DecodeString(*res.Response.Audio)
 		streamer, format, err := wav.Decode(bytes.NewReader(b))
 		if err != nil {
-			fmt.Printf("wav.Decode error,err=%v", err)
+			LogService.Log("ERROR", "wav.Decode error", LogData{
+				"error": err, "text": text, "index": index, "fileName": fileName,
+			})
 		}
 		defer streamer.Close()
 

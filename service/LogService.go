@@ -9,18 +9,20 @@ import (
 )
 
 type logService struct {
-	Log func(level string, message string, data map[string]interface{})
+	Log func(level string, message string, data LogData)
 }
 
 type logLine struct {
-	Time    int64
+	Time    string
 	Level   string
 	Message string
-	Data    map[string]interface{}
+	Data    LogData
 }
 
+type LogData map[string]interface{}
+
 // 注册日志
-func (l logService) LogRegist() func(level string, message string, data map[string]interface{}) {
+func (l logService) LogRegist() func(level string, message string, data LogData) {
 	logFile := os.Getenv("ROOT_DIR") + "/log/log-" + time.Now().Format(enum.DataZone) + ".log"
 	// 文件不存在则创建
 	_, fileExistErr := os.Stat(logFile)
@@ -30,9 +32,9 @@ func (l logService) LogRegist() func(level string, message string, data map[stri
 	}
 	src, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 
-	return func(level string, message string, data map[string]interface{}) {
+	return func(level string, message string, data LogData) {
 		content := logLine{
-			Time:    time.Now().Unix(),
+			Time:    time.Now().Format(enum.DataZone),
 			Level:   level,
 			Message: message,
 			Data:    data,
