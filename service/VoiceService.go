@@ -1,15 +1,19 @@
 package service
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	htmlquery "github.com/antchfx/xquery/html"
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/wav"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	tts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts/v20190823"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -38,34 +42,67 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		_, _ = io.WriteString(m, text)
 		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
 		filePath := "/mnt/voices/" + fileName
-		//filePath := "./tmp/voices/" + fileName
-		// 判断文件是否存在，存在则直接返回文件名
-		_, fileExistErr := os.Stat(filePath)
-		if fileExistErr != nil {
-			textArr := util.StringUtil{}.SplitByLen(text, 105)
-			voiceArr := make([][]byte, len(textArr))
-			var wg sync.WaitGroup
-			for index, item := range textArr {
-				wg.Add(1)
-				go v.TextToVoice(index, item, fileName, voiceArr, &wg)
-				time.Sleep(time.Millisecond * 85)
-			}
-			wg.Wait()
-			// 合并二维数组
-			var voiceContent []byte
-			for _, item := range voiceArr {
-				voiceContent = append(voiceContent, item...)
-			}
+		// filePath := "./tmp/voices/" + fileName
 
-			// 写入文件
-			f, err := os.Create(filePath)
-			if err == nil {
-				_, _ = f.Write(voiceContent)
-				_ = f.Close()
-			}
+		// 判断文件是否存在，存在则直接返回文件名
+		fileInfo, fileExistErr := os.Stat(filePath)
+		// err==nil文件存在，单err!=nil不一定是报文件不存在的错误，需要os.IsNotExist()判断
+		if fileExistErr == nil {
+			fmt.Printf("os.Stat success,file already exists,fileName=%v\n", fileName)
+			return fileInfo.Name(), fileExistErr
+		}
+
+		// 文件不存在
+		var (
+			textArr   = util.StringUtil{}.SplitByLen(strings.TrimSpace(text), 105)
+			voiceArr  = make([]beep.Streamer, len(textArr))
+			formatArr = make([]beep.Format, len(textArr))
+			wg        sync.WaitGroup
+		)
+		for index, item := range textArr {
+			wg.Add(1)
+			go v.TextToVoice(index, strings.TrimSpace(item), fileName, voiceArr, formatArr, &wg)
+			time.Sleep(time.Millisecond * 85)
+		}
+		wg.Wait()
+
+		if err = v.writeToFile(filePath, textArr, voiceArr, formatArr); err != nil {
+			return "", err
 		}
 	}
+
+	fmt.Printf("~~~urlToVoice end~~~,url=%v,fileName=%v\n", url, fileName)
 	return
+}
+
+func (v VoiceService) writeToFile(
+	filePath string, textArr []string, voiceArr []beep.Streamer, formatArr []beep.Format,
+) error {
+	streamer := beep.Seq(voiceArr...)
+
+	// 写入文件
+	file, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("os.Create error,err=%v\n", err)
+		return err
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// 取第一个format值
+	var format = beep.Format{}
+	if len(textArr) > 0 {
+		format = formatArr[0]
+	}
+	err = wav.Encode(file, streamer, format)
+	if err != nil {
+		fmt.Println("wav.Encode error, err=", err)
+		return err
+	}
+	return nil
 }
 
 func (v VoiceService) HtmlToText(html string) (text string) {
@@ -105,7 +142,11 @@ func (v VoiceService) WechatHtmlToText(html string) (text string) {
 	return
 }
 
-func (v VoiceService) TextToVoice(index int, text string, fileName string, voiceArr [][]byte, wg *sync.WaitGroup) {
+func (v VoiceService) TextToVoice(
+	index int, text string, fileName string, voiceArr []beep.Streamer, formatArr []beep.Format, wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
 	// 调用腾讯云接口转语音
 	credential := common.NewCredential(
 		os.Getenv("SECRET_ID"),
@@ -119,12 +160,23 @@ func (v VoiceService) TextToVoice(index int, text string, fileName string, voice
 	request.SessionId = common.StringPtr(fileName)
 	request.ModelType = common.Int64Ptr(1)
 	request.VoiceType = common.Int64Ptr(4) // 选择声音
-	request.Codec = common.StringPtr("mp3")
-	//request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
+	request.Codec = common.StringPtr("wav")
+	// request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)
-	if err == nil {
-		item, _ := base64.StdEncoding.DecodeString(*res.Response.Audio)
-		voiceArr[index] = item
+	if err != nil {
+		fmt.Printf("client.TextToVoice error,err=%v\n", err)
+		return
 	}
-	wg.Done()
+
+	if res != nil && res.Response != nil && res.Response.Audio != nil {
+		b, _ := base64.StdEncoding.DecodeString(*res.Response.Audio)
+		streamer, format, err := wav.Decode(bytes.NewReader(b))
+		if err != nil {
+			fmt.Printf("wav.Decode error,err=%v", err)
+		}
+		defer streamer.Close()
+
+		voiceArr[index] = streamer
+		formatArr[index] = format
+	}
 }
