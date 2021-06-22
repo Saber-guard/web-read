@@ -63,7 +63,7 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		for index, item := range textArr {
 			wg.Add(1)
 			go v.TextToVoice(index, strings.TrimSpace(item), fileName, voiceArr, formatArr, &wg)
-			time.Sleep(time.Millisecond * 85)
+			time.Sleep(time.Millisecond * 100)
 		}
 		wg.Wait()
 
