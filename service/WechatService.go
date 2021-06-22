@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"regexp"
 	"time"
@@ -20,13 +19,13 @@ func (w WechatService) AccessToken() {
 		var response wechatResponse.AccessTokenResponse
 		res, err := CurlService{}.GetJson(url)
 		if err != nil {
-			fmt.Println("AccessToken请求失败")
+			LogService.Log("ERROR", "AccessToken请求失败", LogData{"error": err, "url": url})
 		}
 		if err = json.Unmarshal([]byte(res.json), &response); err != nil {
-			fmt.Println("AccessToken解析失败")
+			LogService.Log("ERROR", "AccessToken解析失败", LogData{"error": err, "res": res})
 		}
 		if err = os.Setenv("WECHAT_ACCESS_TOKEN", response.AccessToken); err != nil {
-			fmt.Println("AccessToken记录失败")
+			LogService.Log("ERROR", "AccessToken记录失败", LogData{"error": err, "res": response})
 		}
 
 		// 定时获取
