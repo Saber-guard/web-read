@@ -6,14 +6,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	htmlquery "github.com/antchfx/xquery/html"
+	htmlQuery "github.com/antchfx/xquery/html"
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/wav"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	tts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts/v20190823"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -53,7 +52,23 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 			return fileInfo.Name(), fileExistErr
 		}
 
-		// 文件不存在
+		// 文件不存在先创建，避免微信重试机制导致重复转换
+		file, err := os.Create(filePath)
+		if err != nil {
+			LogService.Log("ERROR", "os.Create error", LogData{
+				"error": err, "filePath": filePath,
+			})
+			return "", err
+		}
+		defer func() {
+			if err = file.Close(); err != nil {
+				LogService.Log("ERROR", "os.Close error", LogData{
+					"error": err, "filePath": filePath,
+				})
+			}
+		}()
+
+		// 生成音频
 		var (
 			textArr   = util.StringUtil{}.SplitByLen(strings.TrimSpace(text), 105)
 			voiceArr  = make([]beep.Streamer, len(textArr))
@@ -63,11 +78,11 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 		for index, item := range textArr {
 			wg.Add(1)
 			go v.TextToVoice(index, strings.TrimSpace(item), fileName, voiceArr, formatArr, &wg)
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 85)
 		}
 		wg.Wait()
 
-		if err = v.writeToFile(filePath, textArr, voiceArr, formatArr); err != nil {
+		if err = v.writeToFile(file, textArr, voiceArr, formatArr); err != nil {
 			return "", err
 		}
 	}
@@ -77,33 +92,19 @@ func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
 }
 
 func (v VoiceService) writeToFile(
-	filePath string, textArr []string, voiceArr []beep.Streamer, formatArr []beep.Format,
+	file *os.File, textArr []string, voiceArr []beep.Streamer, formatArr []beep.Format,
 ) error {
 	streamer := beep.Seq(voiceArr...)
-
-	// 写入文件
-	file, err := os.Create(filePath)
-	if err != nil {
-		LogService.Log("ERROR", "os.Create error", LogData{
-			"error": err, "filePath": filePath,
-		})
-		return err
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	// 取第一个format值
 	var format = beep.Format{}
 	if len(textArr) > 0 {
 		format = formatArr[0]
 	}
-	err = wav.Encode(file, streamer, format)
+	err := wav.Encode(file, streamer, format)
 	if err != nil {
 		LogService.Log("ERROR", "wav.Encode error", LogData{
-			"error": err, "filePath": filePath,
+			"error": err, "fileName": file.Name(),
 		})
 		return err
 	}
@@ -135,12 +136,12 @@ func (v VoiceService) HtmlToText(html string) (text string) {
 }
 
 func (v VoiceService) WechatHtmlToText(html string) (text string) {
-	doc, _ := htmlquery.Parse(strings.NewReader(html))
+	doc, _ := htmlQuery.Parse(strings.NewReader(html))
 	// 标题
-	title := htmlquery.FindOne(doc, "//h2[@id='activity-name']/text()")
+	title := htmlQuery.FindOne(doc, "//h2[@id='activity-name']/text()")
 	text = title.Data
 	// 文章内容
-	article := htmlquery.FindOne(doc, "//div[@id='js_content']")
+	article := htmlQuery.FindOne(doc, "//div[@id='js_content']")
 	articleHtml, _ := goquery.NewDocumentFromNode(article).Html()
 	text += v.HtmlToText(articleHtml)
 
