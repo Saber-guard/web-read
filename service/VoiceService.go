@@ -138,7 +138,7 @@ func (v VoiceService) HtmlToText(html string) (text string) {
 func (v VoiceService) WechatHtmlToText(html string) (text string) {
 	doc, _ := htmlQuery.Parse(strings.NewReader(html))
 	// 标题
-	title := htmlQuery.FindOne(doc, "//h2[@id='activity-name']/text()")
+	title := htmlQuery.FindOne(doc, "//h1[@id='activity-name']/text()")
 	text = title.Data
 	// 文章内容
 	article := htmlQuery.FindOne(doc, "//div[@id='js_content']")
