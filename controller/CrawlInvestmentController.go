@@ -10,6 +10,8 @@ type CrawlInvestmentController struct {
 }
 
 func (c CrawlInvestmentController) CrawlCompany(context *gin.Context) {
-	service.CrawlService{}.CrawlCompany()
-	context.String(200, "123")
+	count := service.CrawlService{}.CrawlCompany()
+	context.JSON(200, map[string]interface{}{
+		"count": count,
+	})
 }

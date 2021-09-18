@@ -1,5 +1,9 @@
 package util
 
+import (
+	"strconv"
+)
+
 type StringUtil struct {
 }
 
@@ -25,4 +29,26 @@ func (s StringUtil) SplitByLen(str string, unitLen int) []string {
 		offset += unitLen
 	}
 	return arr
+}
+
+// 把输入的类型转换为字符串
+func (s StringUtil) AllToStr(input interface{}) (str string, err error) {
+	if conv, ok := input.(string); ok {
+		str = conv
+		return
+	}
+	if conv, ok := input.(int); ok {
+		str = strconv.Itoa(conv)
+		return
+	}
+	if conv, ok := input.(float32); ok {
+		str = strconv.FormatFloat(float64(conv), 'f', 2, 32)
+		return
+	}
+	if conv, ok := input.(float64); ok {
+		str = strconv.FormatFloat(conv, 'f', 2, 64)
+		return
+	}
+
+	return
 }
