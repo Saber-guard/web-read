@@ -43,7 +43,7 @@ func (c CrawlService) CrawlCompany() int {
 			continue
 		}
 		// 第一次循环时重置一下总页数
-		if page == 1 {
+		if totalPage == 100 {
 			totalPage = int(math.Ceil(float64(response.Data.Total) / float64(size)))
 			LogService.Log("INFO", "总页数重置", LogData{"totalPage": totalPage})
 		}
