@@ -15,7 +15,7 @@ var DbService dbService
 
 func (d dbService) InitDb() {
 	dsn := fmt.Sprintf(
-		"%v:%v@tcp(%v:%v)/%v?parseTime=True",
+		"%v:%v@tcp(%v:%v)/%v?charset=utf8&parseTime=True&loc=Local",
 		os.Getenv("DB_USERNAME"),
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_HOST"),
