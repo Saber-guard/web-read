@@ -25,7 +25,8 @@ func LoadRoute(route *gin.Engine) *gin.Engine {
 	// 爬虫
 	crawlGroup := route.Group("/crawl")
 	{
-		crawlGroup.GET("/crawlCompany", controller.CrawlInvestmentController{}.CrawlCompany)
+		crawlGroup.GET("/crawlCompany", controller.CrawlInvestmentController{}.CrawlCompanyList)
+		crawlGroup.GET("/crawlCompany/:code", controller.CrawlInvestmentController{}.CrawlCompany)
 	}
 	return route
 

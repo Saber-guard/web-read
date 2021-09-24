@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 	"web-read/enum"
 	"web-read/model"
@@ -16,7 +17,7 @@ import (
 type CrawlService struct {
 }
 
-func (c CrawlService) CrawlCompany() int {
+func (c CrawlService) CrawlCompanyList() int {
 	count := 0
 	page := 1
 	size := 20
@@ -36,7 +37,7 @@ func (c CrawlService) CrawlCompany() int {
 			LogService.Log("ERROR", "抓取上市公司信息失败", LogData{"url": url, "error": err})
 			continue
 		}
-		var response crawlResponse.CrawlCompanyResponse
+		var response crawlResponse.CrawlCompanyListResponse
 		if err = json.Unmarshal([]byte(res.text), &response); err != nil {
 			fmt.Println(err)
 			LogService.Log("ERROR", "上市公司返回信息解析失败", LogData{"text": res.text, "error": err})
@@ -111,4 +112,75 @@ func (c CrawlService) CrawlCompany() int {
 		}
 	}
 	return count
+}
+
+func (c CrawlService) CrawlCompany(code string) bool {
+	start := time.Now().AddDate(0, 0, -31).Format(enum.DataZone2)
+	end := time.Now().Format(enum.DataZone2)
+	url := "http://push2his.eastmoney.com/api/qt/stock/kline/get?" +
+		"secid=" + code + "&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
+		"&klt=101&fqt=0&beg=" + start + "&end=" + end
+	res, err := CurlService{}.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		LogService.Log("ERROR", "抓取上市公司信息失败", LogData{"url": url, "error": err})
+		return false
+	}
+	var response crawlResponse.CrawlCompanyResponse
+	if err = json.Unmarshal([]byte(res.text), &response); err != nil {
+		fmt.Println(err)
+		LogService.Log("ERROR", "上市公司返回信息解析失败", LogData{"text": res.text, "error": err})
+		return false
+	}
+	yestdayEnd := "" // 昨收
+	for index, item := range response.Data.Klines {
+		tmp := strings.Split(item, ",")
+		// 第一条只取收盘价,记作昨收
+		if index > 0 {
+			// 保存日线信息
+			var dayData model.DayDataModel
+			DbService.Db.Where("code = ?", response.Data.Code).Where("date = ?", tmp[0]).First(&dayData)
+			// 判断是否是类型的零值
+			if reflect.DeepEqual(dayData, reflect.Zero(reflect.TypeOf(dayData)).Interface()) {
+				dayData = model.DayDataModel{
+					Date: tmp[0],
+					Code: response.Data.Code,
+					Ext:  res.text,
+				}
+				dayData.TodayStart, _ = util.StringUtil{}.AllToStr(tmp[1])
+				dayData.TodayEnd, _ = util.StringUtil{}.AllToStr(tmp[2])
+				dayData.YestdayEnd, _ = util.StringUtil{}.AllToStr(yestdayEnd)
+				dayData.Highest, _ = util.StringUtil{}.AllToStr(tmp[3])
+				dayData.Minimum, _ = util.StringUtil{}.AllToStr(tmp[4])
+				dayData.DealNum, _ = util.StringUtil{}.AllToStr(tmp[5])
+				dayData.DealMoney, _ = util.StringUtil{}.AllToStr(tmp[6])
+				dayData.IncreaseRange, _ = util.StringUtil{}.AllToStr(tmp[8])
+				dayData.IncreaseMoney, _ = util.StringUtil{}.AllToStr(tmp[9])
+				dayData.TurnoverRate, _ = util.StringUtil{}.AllToStr(tmp[10])
+				dayData.ProfitRatio = "0"
+				dayData.ValueRatio = "0"
+				_ = DbService.Db.Create(&dayData)
+			} else {
+				dayData.Date = tmp[0]
+				dayData.Code = response.Data.Code
+				dayData.TodayStart, _ = util.StringUtil{}.AllToStr(tmp[1])
+				dayData.TodayEnd, _ = util.StringUtil{}.AllToStr(tmp[2])
+				dayData.YestdayEnd, _ = util.StringUtil{}.AllToStr(yestdayEnd)
+				dayData.Highest, _ = util.StringUtil{}.AllToStr(tmp[3])
+				dayData.Minimum, _ = util.StringUtil{}.AllToStr(tmp[4])
+				dayData.DealNum, _ = util.StringUtil{}.AllToStr(tmp[5])
+				dayData.DealMoney, _ = util.StringUtil{}.AllToStr(tmp[6])
+				dayData.IncreaseRange, _ = util.StringUtil{}.AllToStr(tmp[8])
+				dayData.IncreaseMoney, _ = util.StringUtil{}.AllToStr(tmp[9])
+				dayData.TurnoverRate, _ = util.StringUtil{}.AllToStr(tmp[10])
+				//dayData.ProfitRatio = "0"
+				//dayData.ValueRatio = "0"
+				//dayData.Ext = res.text
+				DbService.Db.Save(&dayData)
+			}
+		}
+		yestdayEnd = tmp[2]
+	}
+
+	return true
 }
