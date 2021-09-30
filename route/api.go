@@ -28,6 +28,12 @@ func LoadRoute(route *gin.Engine) *gin.Engine {
 		crawlGroup.GET("/crawlCompany", controller.CrawlInvestmentController{}.CrawlCompanyList)
 		crawlGroup.GET("/crawlCompany/:code", controller.CrawlInvestmentController{}.CrawlCompany)
 	}
+
+	// 股票信息
+	sharesGroup := route.Group("/shares")
+	{
+		sharesGroup.GET("/", controller.SharesController{}.List)
+	}
 	return route
 
 }

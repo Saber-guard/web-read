@@ -165,7 +165,8 @@ func (v VoiceService) TextToVoice(
 	request.Text = common.StringPtr(text)
 	request.SessionId = common.StringPtr(fileName)
 	request.ModelType = common.Int64Ptr(1)
-	request.VoiceType = common.Int64Ptr(4) // 选择声音
+	voiceTypeList := []int64{4, 101006, 101008, 101004, 101009, 101003, 101013, 101018, 101015, 101016}
+	request.VoiceType = common.Int64Ptr(voiceTypeList[len(text)%len(voiceTypeList)]) // 随机选择声音
 	request.Codec = common.StringPtr("wav")
 	// request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)
