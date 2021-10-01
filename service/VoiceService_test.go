@@ -16,7 +16,7 @@ func TestVoiceService_TextToVoice(t *testing.T) {
 	wg.Add(1)
 	voiceArr := make([]beep.Streamer, 2)
 	formatArr := make([]beep.Format, 2)
-	vs.TextToVoice(1, text, "test_file_name01", voiceArr, formatArr,wg)
+	vs.TextToVoice(1, text, "test_file_name01", voiceArr, formatArr, 4, wg)
 
 	fmt.Printf("voiceArr[1]--bytearr=%v\n", voiceArr[1])
 }
@@ -25,7 +25,7 @@ func TestVoiceService_urlToVoice(t *testing.T) {
 	c.Convey("test1", t, func() {
 		vs := VoiceService{}
 		// url:="http://mp.weixin.qq.com"
-		url:="https://mp.weixin.qq.com/s/MRoSibzspGuoaY-FDCTBcw"
+		url := "https://mp.weixin.qq.com/s/MRoSibzspGuoaY-FDCTBcw"
 		fileName, err := vs.urlToVoice(url)
 
 		c.So(err, c.ShouldEqual, nil)

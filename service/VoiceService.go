@@ -25,66 +25,76 @@ type VoiceService struct {
 }
 
 func (v VoiceService) urlToVoice(url string) (fileName string, err error) {
-	res, err := CurlService{}.Get(url)
-	if err == nil && res.code == 200 {
-		// html转换成文本
-		re, err := regexp.Compile("^http(s)?://mp\\.weixin\\.qq\\.com")
-		var text string
-		if err == nil && re.MatchString(url) {
-			text = v.WechatHtmlToText(res.text)
-		} else {
-			text = v.HtmlToText(res.text)
+	var text string
+	if re, err := regexp.Compile("^http(s)?://"); err == nil && re.MatchString(url) {
+		text = "获取内容失败"
+		// 发送请求，获取内容
+		res, err := CurlService{}.Get(url)
+		if err == nil && res.code == 200 {
+			// html转换成文本
+			if re, err := regexp.Compile("^http(s)?://mp\\.weixin\\.qq\\.com"); err == nil && re.MatchString(url) {
+				text = v.WechatHtmlToText(res.text)
+			} else {
+				text = v.HtmlToText(res.text)
+			}
 		}
+	} else {
+		// 非url直接转化成语音
+		text = url
+	}
 
-		// 文字内容md5生成文件名称
-		m := md5.New()
-		_, _ = io.WriteString(m, text)
-		fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
-		filePath := os.Getenv("VOICE_PATH") + fileName
+	// 文字内容md5生成文件名称
+	m := md5.New()
+	_, _ = io.WriteString(m, text)
+	fileName = fmt.Sprintf("%x", m.Sum(nil)) + ".mp3"
+	filePath := os.Getenv("VOICE_PATH") + fileName
 
-		// todo::为了避免并发请求导致重复调用腾讯云，需要一个分布式锁
+	// todo::为了避免并发请求导致重复调用腾讯云，需要一个分布式锁
 
-		// 判断文件是否存在，存在则直接返回文件名
-		fileInfo, fileExistErr := os.Stat(filePath)
-		// err==nil文件存在，单err!=nil不一定是报文件不存在的错误，需要os.IsNotExist()判断
-		if fileExistErr == nil {
-			LogService.Log("INFO", "os.Stat success,file already exists", LogData{"filePath": filePath})
-			return fileInfo.Name(), fileExistErr
-		}
+	// 判断文件是否存在，存在则直接返回文件名
+	fileInfo, fileExistErr := os.Stat(filePath)
+	// err==nil文件存在，单err!=nil不一定是报文件不存在的错误，需要os.IsNotExist()判断
+	if fileExistErr == nil {
+		LogService.Log("INFO", "os.Stat success,file already exists", LogData{"filePath": filePath})
+		return fileInfo.Name(), fileExistErr
+	}
 
-		// 文件不存在先创建，避免微信重试机制导致重复转换
-		file, err := os.Create(filePath)
-		if err != nil {
-			LogService.Log("ERROR", "os.Create error", LogData{
+	// 文件不存在先创建，避免微信重试机制导致重复转换
+	file, err := os.Create(filePath)
+	if err != nil {
+		LogService.Log("ERROR", "os.Create error", LogData{
+			"error": err, "filePath": filePath,
+		})
+		return "", err
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			LogService.Log("ERROR", "os.Close error", LogData{
 				"error": err, "filePath": filePath,
 			})
-			return "", err
 		}
-		defer func() {
-			if err = file.Close(); err != nil {
-				LogService.Log("ERROR", "os.Close error", LogData{
-					"error": err, "filePath": filePath,
-				})
-			}
-		}()
+	}()
 
-		// 生成音频
-		var (
-			textArr   = util.StringUtil{}.SplitByLen(strings.TrimSpace(text), 105)
-			voiceArr  = make([]beep.Streamer, len(textArr))
-			formatArr = make([]beep.Format, len(textArr))
-			wg        sync.WaitGroup
-		)
-		for index, item := range textArr {
-			wg.Add(1)
-			go v.TextToVoice(index, strings.TrimSpace(item), fileName, voiceArr, formatArr, &wg)
-			time.Sleep(time.Millisecond * 85)
-		}
-		wg.Wait()
+	// 生成音频
+	var (
+		textArr   = util.StringUtil{}.SplitByLen(strings.TrimSpace(text), 105)
+		voiceArr  = make([]beep.Streamer, len(textArr))
+		formatArr = make([]beep.Format, len(textArr))
+		wg        sync.WaitGroup
+	)
+	// 随机选择声音
+	voiceTypeList := []int64{4, 101006, 101008, 101004, 101009, 101003, 101013, 101018, 101015, 101016}
+	voiceType := voiceTypeList[len(text)%len(voiceTypeList)]
+	for index, item := range textArr {
+		wg.Add(1)
+		go v.TextToVoice(index, strings.TrimSpace(item), fileName, voiceArr, formatArr, voiceType, &wg)
+		time.Sleep(time.Millisecond * 85)
+	}
+	wg.Wait()
 
-		if err = v.writeToFile(file, textArr, voiceArr, formatArr); err != nil {
-			return "", err
-		}
+	// 写入到文件
+	if err = v.writeToFile(file, textArr, voiceArr, formatArr); err != nil {
+		return "", err
 	}
 
 	LogService.Log("INFO", "~~~urlToVoice end~~~", LogData{"url": url, "fileName": fileName})
@@ -149,7 +159,7 @@ func (v VoiceService) WechatHtmlToText(html string) (text string) {
 }
 
 func (v VoiceService) TextToVoice(
-	index int, text string, fileName string, voiceArr []beep.Streamer, formatArr []beep.Format, wg *sync.WaitGroup,
+	index int, text string, fileName string, voiceArr []beep.Streamer, formatArr []beep.Format, voiceType int64, wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
 
@@ -165,8 +175,7 @@ func (v VoiceService) TextToVoice(
 	request.Text = common.StringPtr(text)
 	request.SessionId = common.StringPtr(fileName)
 	request.ModelType = common.Int64Ptr(1)
-	voiceTypeList := []int64{4, 101006, 101008, 101004, 101009, 101003, 101013, 101018, 101015, 101016}
-	request.VoiceType = common.Int64Ptr(voiceTypeList[len(text)%len(voiceTypeList)]) // 随机选择声音
+	request.VoiceType = common.Int64Ptr(voiceType) // 随机选择声音
 	request.Codec = common.StringPtr("wav")
 	// request.Speed = common.Float64Ptr(0) // 语速-2代表0.6倍 -1代表0.8倍 0代表1.0倍（默认） 1代表1.2倍 2代表1.5倍
 	res, err := client.TextToVoice(request)

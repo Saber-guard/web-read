@@ -2,8 +2,8 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
-	"regexp"
 	"time"
 	"web-read/request/wechatRequest"
 	"web-read/response/wechatResponse"
@@ -40,18 +40,15 @@ func (w WechatService) ReceiveText(inputs wechatRequest.TextXmlRequest) (respons
 	response.ToUserName = inputs.FromUserName
 	response.CreateTime = time.Now().Unix()
 
-	// 如果是http或https开头，调用在线语音合成
-	re, err := regexp.Compile("^http(s)?://")
-	if err == nil && re.MatchString(inputs.Content) {
-		voiceUrlPrefix := "http://voice.codingwork.cn/"
-		fileName, err := VoiceService{}.urlToVoice(inputs.Content)
-		if err == nil {
-			response.MsgType = "text"
-			response.Content = "声音链接：" + voiceUrlPrefix + fileName
-		}
+	voiceUrlPrefix := "http://voice.codingwork.cn/"
+	fileName, err := VoiceService{}.urlToVoice(inputs.Content)
+	fmt.Println(err)
+	if err == nil {
+		response.MsgType = "text"
+		response.Content = "声音链接：" + voiceUrlPrefix + fileName
 	} else {
 		response.MsgType = "text"
-		response.Content = inputs.Content
+		response.Content = err.Error()
 	}
 
 	return
