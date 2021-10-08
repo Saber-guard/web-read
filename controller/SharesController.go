@@ -12,8 +12,7 @@ type SharesController struct {
 func (c SharesController) List(context *gin.Context) {
 	data := service.SharesService{}.List()
 	context.JSON(200, map[string]interface{}{
-		"code":    0,
-		"message": "成功",
-		"data":    data,
+		"success": true,
+		"content": data,
 	})
 }
