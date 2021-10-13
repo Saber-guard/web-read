@@ -8,7 +8,7 @@ import (
 func LoadRoute(route *gin.Engine) *gin.Engine {
 	rootGroup := route.Group("")
 	{
-		rootGroup.GET("/", func(context *gin.Context) {
+		rootGroup.Any("/", func(context *gin.Context) {
 			context.JSON(200, gin.H{
 				"message": "hello",
 			})

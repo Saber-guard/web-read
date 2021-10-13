@@ -26,6 +26,7 @@ func main() {
 
 	router := gin.Default()
 	// 中间件
+	router.Use(middleware.Cors())                           // 允许跨域
 	router.Use(middleware.RequestLog())                     // 记录请求日志
 	service.LogService.Log = service.LogService.LogRegist() // 记录逻辑日志
 	// 连接数据库
