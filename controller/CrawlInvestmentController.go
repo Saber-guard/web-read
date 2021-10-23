@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"web-read/request/crawlRequest"
 	"web-read/service"
 )
 
@@ -10,10 +11,16 @@ type CrawlInvestmentController struct {
 }
 
 func (c CrawlInvestmentController) CrawlCompanyList(context *gin.Context) {
-	count := service.CrawlService{}.CrawlCompanyList()
-	context.JSON(200, map[string]interface{}{
-		"count": count,
-	})
+	var inputs crawlRequest.CompanyListRequest
+	err := context.ShouldBindQuery(&inputs)
+	if err != nil {
+		c.ApiError(context, -1, "参数错误")
+	} else {
+		count := service.CrawlService{}.CrawlCompanyList(inputs)
+		context.JSON(200, map[string]interface{}{
+			"count": count,
+		})
+	}
 }
 
 func (c CrawlInvestmentController) CrawlCompany(context *gin.Context) {

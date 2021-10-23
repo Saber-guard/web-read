@@ -10,6 +10,7 @@ import (
 	"time"
 	"web-read/enum"
 	"web-read/model"
+	"web-read/request/crawlRequest"
 	"web-read/response/crawlResponse"
 	"web-read/util"
 )
@@ -17,12 +18,15 @@ import (
 type CrawlService struct {
 }
 
-func (c CrawlService) CrawlCompanyList() int {
+func (c CrawlService) CrawlCompanyList(inputs crawlRequest.CompanyListRequest) int {
 	count := 0
 	page := 1
 	size := 20
 	totalPage := 100
-	date := time.Now().Format(enum.DataZone)
+	date := inputs.Date
+	if date == "" {
+		date = time.Now().Format(enum.DataZone)
+	}
 	fields := "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f11,f13,f14,f15,f16,f17,f18,f19,f20,f21,f22,f23,f24,f25," +
 		"f26,f27,f28,f29,f30,f31,f32,f33,f34,f35,f36,f37,f38,f39,f40,f41,f42,f43,f44,f45,f62,f128,f136,f115,f152"
 	for page <= totalPage {
@@ -72,7 +76,7 @@ func (c CrawlService) CrawlCompanyList() int {
 			// 判断是否是类型的零值
 			if reflect.DeepEqual(dayData, reflect.Zero(reflect.TypeOf(dayData)).Interface()) {
 				dayData = model.DayDataModel{
-					Date: time.Now().Format(enum.DataZone),
+					Date: date,
 					Code: item["f12"].(string),
 					Ext:  string(itemStr),
 				}
@@ -90,7 +94,7 @@ func (c CrawlService) CrawlCompanyList() int {
 				dayData.ValueRatio, _ = util.StringUtil{}.AllToStr(item["f23"])
 				_ = DbService.Db.Create(&dayData)
 			} else {
-				dayData.Date = time.Now().Format(enum.DataZone)
+				dayData.Date = date
 				dayData.Code, _ = util.StringUtil{}.AllToStr(item["f12"])
 				dayData.TodayStart, _ = util.StringUtil{}.AllToStr(item["f17"])
 				dayData.TodayEnd, _ = util.StringUtil{}.AllToStr(item["f2"])
@@ -115,7 +119,7 @@ func (c CrawlService) CrawlCompanyList() int {
 }
 
 func (c CrawlService) CrawlCompany(code string) bool {
-	start := time.Now().AddDate(0, 0, -31).Format(enum.DataZone2)
+	start := time.Now().AddDate(0, 0, -500).Format(enum.DataZone2)
 	end := time.Now().Format(enum.DataZone2)
 	url := "http://push2his.eastmoney.com/api/qt/stock/kline/get?" +
 		"secid=" + code + "&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61" +
